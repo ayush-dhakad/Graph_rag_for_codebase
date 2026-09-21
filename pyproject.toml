@@ -1,0 +1,19 @@
+[project]
+name = "code-graph-rag"
+version = "0.1.0"
+description = "AST-first GraphRAG for targeted code retrieval"
+requires-python = ">=3.11"
+dependencies = [
+  "neo4j>=6.0",
+  "openai>=3.0",
+  "tiktoken>=0.12",
+  "tree-sitter>=0.25",
+  "tree-sitter-language-pack>=1.20",
+]
+
+[project.scripts]
+codegraphrag = "codegraphrag.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

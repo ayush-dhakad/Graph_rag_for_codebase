@@ -1,0 +1,5 @@
+neo4j>=6.0
+openai>=3.0
+tiktoken>=0.12
+tree-sitter>=0.25
+tree-sitter-language-pack>=1.20

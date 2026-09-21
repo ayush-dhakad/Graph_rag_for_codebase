@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: code-graph-rag
+Version: 0.1.0
+Summary: AST-first GraphRAG for targeted code retrieval
+Requires-Python: >=3.11
+Requires-Dist: neo4j>=6.0
+Requires-Dist: openai>=3.0
+Requires-Dist: tiktoken>=0.12
+Requires-Dist: tree-sitter>=0.25
+Requires-Dist: tree-sitter-language-pack>=1.20

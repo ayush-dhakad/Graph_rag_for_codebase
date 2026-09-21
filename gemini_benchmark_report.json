@@ -1,0 +1,26 @@
+{
+  "question": "What calls 'assemble_context'?",
+  "expected_text": "ask method",
+  "baseline": {
+    "text": "`assemble_context` is called by the `ask` method of the `CodeGraphRAG` class in `src/codegraphrag/pipeline.py`.",
+    "prompt_tokens": 8987,
+    "output_tokens": 35,
+    "thought_tokens": 403,
+    "cached_tokens": 0,
+    "total_tokens": 9425,
+    "model": "gemini-3.6-flash"
+  },
+  "graph_rag": {
+    "text": "The `ask` method in the `CodeGraphRAG` class calls `assemble_context`.\n\n* **Function:** `ask`\n* **Class:** `CodeGraphRAG`\n* **File:** `src/codegraphrag/pipeline.py`",
+    "prompt_tokens": 206,
+    "output_tokens": 56,
+    "thought_tokens": 301,
+    "cached_tokens": 0,
+    "total_tokens": 563,
+    "model": "gemini-3.6-flash"
+  },
+  "baseline_correct": true,
+  "graph_rag_correct": true,
+  "context_tokens": 119,
+  "total_token_reduction_percent": 94.0
+}
