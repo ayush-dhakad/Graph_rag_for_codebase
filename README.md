@@ -6,7 +6,8 @@ An AST-first retrieval system that treats a codebase as a graph, rather than emb
 
 `Tree-sitter AST → CodeGraph (functions/classes/imports/calls) → query translator → read-only Cypher intent → targeted source context → final LLM`
 
-- **Structural parsing:** Tree-sitter extracts files, functions, classes, methods, and imports.
+- **Structural parsing:** Tree-sitter extracts files, functions, classes, methods, imports, and call expressions. Python imports (including aliases and relative imports) and named/namespace ES imports are read from syntax nodes rather than source-text patterns.
+- **Call resolution:** Calls are linked using lexical scopes, explicit imports, `self`/`cls`/`this` receivers, and simple local constructor assignments. Nested functions own their body calls; comments and strings do not create calls. Unknown or ambiguous targets remain unlinked. This is a structural index, not a full type checker: dynamic dispatch, inheritance resolution, factory return types, anonymous callbacks, wildcard imports, and complex receiver expressions are not inferred. Language coverage depends on the supported syntax-node shapes.
 - **Graph storage:** JSON-backed in-memory graph works locally; `Neo4jGraphStore` is included for Neo4j/Memgraph deployments.
 - **Question to graph query:** An optional lightweight OpenAI model produces constrained JSON that is compiled into parameterized read-only Cypher. Without `OPENAI_API_KEY`, deterministic local rules cover callers, callees, imports, definitions, and class members.
 - **Context assembly:** Source for matching graph nodes is packed up to a token budget. No vector database or Sentence-Transformer is used.
@@ -44,3 +45,5 @@ For example, a 100,000-token repository and a 2,500-token retrieved context yiel
 ## Neo4j / Memgraph
 
 Instantiate `Neo4jGraphStore(uri, username, password)` and call `write_graph(graph)` after indexing. It uses ordinary Cypher `MERGE` statements for the fixed relationship set, so it works without APOC and is compatible with Neo4j or Memgraph.
+
+After changing source code or upgrading the parser, rerun `codegraphrag index .` to replace the saved graph. Existing benchmark reports describe their original run; rerun the benchmark separately to measure the new index.
