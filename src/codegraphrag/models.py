@@ -83,8 +83,8 @@ class GraphQuery:
 
 @dataclass(frozen=True)
 class ContextResult:
-    query: GraphQuery
-    cypher: str
+    query: GraphQuery | None
+    cypher: str | None
     nodes: list[CodeNode]
     context: str
     tokens: int

@@ -8,6 +8,7 @@ from .context import assemble_context, count_tokens
 from .models import ContextResult
 from .parser import TreeSitterCodeParser
 from .query import QueryTranslator
+from .semantic import build_semantic_index, semantic_search
 from .store import InMemoryGraphStore
 
 
@@ -15,20 +16,34 @@ class CodeGraphRAG:
     def __init__(self, index_path: str | Path = ".codegraphrag/index.json") -> None:
         self.index_path = Path(index_path)
 
-    def index(self, repository: str | Path) -> InMemoryGraphStore:
+    def index(self, repository: str | Path, *, semantic: bool = False) -> InMemoryGraphStore:
         # Grammar binaries are a process-wide cache, independent of where an index is saved.
         graph = TreeSitterCodeParser().parse_repository(repository)
-        store = InMemoryGraphStore(graph)
+        semantic_index = build_semantic_index(graph) if semantic else None
+        store = InMemoryGraphStore(graph, semantic_index)
         store.save(self.index_path)
         return store
 
-    def ask(self, question: str, budget_tokens: int = 2500) -> ContextResult:
+    def ask(self, question: str, budget_tokens: int = 2500, *, semantic: bool = False) -> ContextResult:
         store = InMemoryGraphStore.load(self.index_path)
-        query = QueryTranslator().translate(question)
-        cypher, _ = query.to_cypher()
-        nodes = store.execute(query)
+        if not semantic:
+            try:
+                query = QueryTranslator().translate(question)
+            except ValueError:
+                if store.semantic_index is None:
+                    raise
+            else:
+                cypher, _ = query.to_cypher()
+                nodes = store.execute(query)
+                context, tokens = assemble_context(nodes, budget_tokens)
+                if nodes or store.semantic_index is None:
+                    return ContextResult(query, cypher, nodes, context, tokens)
+
+        if store.semantic_index is None:
+            raise ValueError("Semantic search requires an index built with 'codegraphrag index --semantic'.")
+        nodes = semantic_search(store.graph, store.semantic_index, question)
         context, tokens = assemble_context(nodes, budget_tokens)
-        return ContextResult(query, cypher, nodes, context, tokens)
+        return ContextResult(None, None, nodes, context, tokens)
 
     def token_report(self, repository: str | Path, question: str, budget_tokens: int = 2500) -> dict:
         full_code = "\n".join(

@@ -1,6 +1,6 @@
 # Code GraphRAG
 
-An AST-first retrieval system that treats a codebase as a graph, rather than embedding every chunk of code. It reduces final-LLM context by retrieving only code connected to the question's target symbol.
+An AST-first retrieval system that uses a code graph to find source for structural questions. Optional semantic search supports questions that describe behavior without naming a symbol.
 
 ## Architecture
 
@@ -10,7 +10,7 @@ An AST-first retrieval system that treats a codebase as a graph, rather than emb
 - **Call resolution:** Calls are linked using lexical scopes, explicit imports, `self`/`cls`/`this` receivers, and simple local constructor assignments. Nested functions own their body calls; comments and strings do not create calls. Unknown or ambiguous targets remain unlinked. This is a structural index, not a full type checker: dynamic dispatch, inheritance resolution, factory return types, anonymous callbacks, wildcard imports, and complex receiver expressions are not inferred. Language coverage depends on the supported syntax-node shapes.
 - **Graph storage:** JSON-backed in-memory graph works locally; `Neo4jGraphStore` is included for Neo4j/Memgraph deployments.
 - **Question to graph query:** An optional lightweight OpenAI model produces constrained JSON that is compiled into parameterized read-only Cypher. Without `OPENAI_API_KEY`, deterministic local rules cover callers, callees, imports, definitions, and class members.
-- **Context assembly:** Source for matching graph nodes is packed up to a token budget. No vector database or Sentence-Transformer is used.
+- **Context assembly:** Source for matching graph nodes is packed up to a token budget. Optional embeddings are stored with the graph in the local JSON index.
 
 ## M5 Air setup
 
@@ -29,6 +29,19 @@ pytest
 On first indexing, `tree-sitter-language-pack` downloads only the grammars encountered and stores them under `.codegraphrag/tree-sitter`.
 
 For lightweight LLM translation, set `OPENAI_API_KEY` and optionally `CODEGRAPHRAG_QUERY_MODEL` (default: `gpt-4.1-mini`). The final answer model receives the printed targeted context, not the entire repository.
+
+## Semantic search
+
+Set `OPENAI_API_KEY`, then build the semantic index and search it:
+
+```bash
+codegraphrag index . --semantic
+codegraphrag ask "How does the app decide what code to send to the model?" --semantic
+```
+
+Indexing sends paths, symbol names, and bounded source excerpts to OpenAI for embeddings. Semantic queries send the question for embedding, rank code by cosine similarity, and include direct graph neighbors within the context budget.
+
+With a semantic index, plain `ask` uses it as a fallback when symbol lookup finds no nodes. Pass `--semantic` to search by meaning first. Rebuild with `--semantic` after source changes to refresh the vectors. A graph-only reindex replaces the semantic index.
 
 ## Live Gemini verification
 

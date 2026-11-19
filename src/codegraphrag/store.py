@@ -8,16 +8,21 @@ from .models import CodeGraph, CodeNode, Edge, GraphQuery
 
 class InMemoryGraphStore:
     """Portable graph store; persisted as JSON so Neo4j is optional during development."""
-    def __init__(self, graph: CodeGraph | None = None) -> None:
+    def __init__(self, graph: CodeGraph | None = None, semantic_index: dict | None = None) -> None:
         self.graph = graph or CodeGraph()
+        self.semantic_index = semantic_index
 
     def save(self, path: str | Path) -> None:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        Path(path).write_text(json.dumps(self.graph.to_dict(), indent=2), encoding="utf-8")
+        data = self.graph.to_dict()
+        if self.semantic_index is not None:
+            data["semantic_index"] = self.semantic_index
+        Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     @classmethod
     def load(cls, path: str | Path) -> "InMemoryGraphStore":
-        return cls(CodeGraph.from_dict(json.loads(Path(path).read_text(encoding="utf-8"))))
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        return cls(CodeGraph.from_dict(data), data.get("semantic_index"))
 
     def execute(self, query: GraphQuery) -> list[CodeNode]:
         nodes = self.graph.nodes

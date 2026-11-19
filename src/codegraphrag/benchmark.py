@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import re
+from tempfile import TemporaryDirectory
 
 from .gemini import GeminiClient, GeminiResult
 from .pipeline import CodeGraphRAG
@@ -49,9 +50,10 @@ def run_benchmark(
     budget_tokens: int = 2500,
 ) -> BenchmarkResult:
     repository = Path(repository)
-    rag = CodeGraphRAG(repository / ".codegraphrag" / "index.json")
-    rag.index(repository)
-    graph_context = rag.ask(question, budget_tokens)
+    with TemporaryDirectory(prefix="codegraphrag-benchmark-") as temp:
+        rag = CodeGraphRAG(Path(temp) / "index.json")
+        rag.index(repository)
+        graph_context = rag.ask(question, budget_tokens)
     client = GeminiClient(model=model)
     baseline = client.generate(_prompt(question, rag.repository_source(repository)))
     graph = client.generate(_prompt(question, graph_context.context))
